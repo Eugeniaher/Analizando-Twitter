@@ -143,15 +143,6 @@ Creamos cuatro df: 1. con retweets, para cada vacuna. 2. sin retweets,  para cad
 ### Pfizer
 
 ```{r}
-#Creamos y guardamos un df sin los rt, para ello filtramos por retweet = falso.
-
-df_pfizer_noRT <- df_pfizer %>%
-  filter(is_retweet == FALSE) 
-
-#Guardamos el df
-
-write.csv2(df_pfizer_noRT, "df_pfizer_noRT_final.csv", row.names = FALSE)
-
 #Guardamos un df con rt, como nuestro df original, "df_pfizer", ya tiene los rt, lo unico que hacemos es guardarlo en csv con otro nombre "df_pfizer_RT_final"
 
 write.csv2(df_pfizer, "df_pfizer_RT_final.csv", row.names = FALSE)
@@ -160,15 +151,6 @@ write.csv2(df_pfizer, "df_pfizer_RT_final.csv", row.names = FALSE)
 ### SputnikV
 
 ```{r}
-
-#Creamos y guardamos un df sin los rt, para ello filtramos por retweet = falso.
-
-df_sputnik_noRT <- df_sputnik %>%
-  filter(is_retweet == FALSE) 
-
-#Guardamos el df
-
-write.csv2(df_sputnik_noRT, "df_sputnik_noRT_final.csv", row.names = FALSE)
 
 #Guardamos un df con rt, como nuestro df original, "df_sputnik", ya tiene los rt, lo unico que hacemos es guardarlo en csv con otro nombre "df_sputnik_RT_final"
 
