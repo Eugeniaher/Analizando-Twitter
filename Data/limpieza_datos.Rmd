@@ -1,0 +1,180 @@
+---
+title: "Limpieza de datos"
+author: "Ornella Giansetto + Walter Baez + Eugenia Hernandez + Santiago Caviglia + Fernando Zaffaroni"
+date: "30/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+```
+
+Cargamos las librerías
+
+```{r include=FALSE}
+# Cargamos las librerías
+
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(stringdist)
+library(data.table)
+```
+
+Para tener dos csv de cada vacuna lo que hicimos fue descargar los tweets y juntarlos todos en dos df: 1. con retweets 2. sin retweets.
+
+El proceso fue el siguiente (duplicado para ambas vacunas)
+
+Aclaración: no pasamos el rmd ya que ocupa mucho lugar y github se nos rompe.
+
+```{r}
+#Unimos los datasets en un uno nuevo (df_sputnik_union)
+
+#df_sputnik_union <- rbind(sputnikV_RT, sputnikV_RT2,  sputnikV_RT3, sputnikV_RT4, sputnikV_RT5, sputnikV_RT6, sputnikV_RT7, sputnikV_RT8, sputnikV_RT9, sputnikV_RT10, sputnikV_RT11, sputnikV_RT12, sputnikV_RT13)
+
+#Eliminamos los duplicados segun el status id
+
+#df_sputnik_union <- df_sputnik_union[!duplicated(df_sputnik_union$status_id),]
+
+#write.csv2(df_sputnik_union, "../Data/df_sputnik.csv", row.names = FALSE)
+
+#Unimos los datasets en uno solo (df_pfizer_union)
+
+# df_pfizer_union <- rbind(pfizer_RT, pfizer_RT2, pfizer_RT3, pfizer_RT4, pfizer_RT5, pfizer_RT6, pfizer_RT7, pfizer_RT8, pfizer_RT9, pfizer_RT10, pfizer_RT11, pfizer_RT12, pfizer_RT13)
+
+#Eliminamos los duplicados segun el status id
+
+# df_pfizer_union <- df_pfizer_union[!duplicated(df_pfizer_union$status_id),]
+
+```
+
+Ahora si, empecemos con la limpieza.
+
+Cargamos los df. 
+
+```{r}
+#Cargamos los df 
+
+df_pfizer <- read.csv2("../Data/df_pfizer.csv")
+
+df_sputnik <- read.csv2("../Data/df_sputnik.csv")
+
+```
+
+Creamos las funciones que usaremos para la limpieza de los datos 
+
+```{r echo=TRUE}
+
+#Creemos una función que nos permita seleccionar las columnas que son de nuestro interes, y a su vez, filtrar por la variable ubicación. Además, cambiamos el formato de la variable fecha y la ordenamos de manera ascedente.
+
+filtrar_df <- function(df) {
+  #Nos quedamos con las columnas que son de nuestro interes
+  df <- df %>% subset(, c(2, 3, 4, 5, 6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 31, 32, 49, 55, 56, 57, 58, 59, 61, 68, 69, 70, 71, 75, 79, 85))   
+  #Se filtra el df por los países que son de nuestro interes. En este caso, limítrofes a Argentina. Dejamos de lado Brasil ya que su lengua no es el español (tal como le pedimos a la api). 
+  df <- df %>% filter(location %like% "Argentina" | location %like% "Bolivia" |location %like% "Chile" | location %like% "Paraguay" |  location %like% "Uruguay")
+   #Pasamos la variable created at de formato texto a formato fecha
+  df <- df %>% mutate(created_at = ymd_hms(created_at)) 
+  #Ordenamos los tweets por fecha de creacion
+  df <- df %>% arrange (created_at) 
+  df <- df %>% filter(created_at >= "2020-12-22")
+    return(df)
+}
+
+limpiar_texto <- function(texto){
+  #Se convierte todo el texto a minúsculas
+    nuevo_texto <- tolower(texto)
+  #Eliminamos los corchetes angulares
+    nuevo_texto <- str_replace_all(nuevo_texto, "<([^<>]+)>", " ")
+  # Eliminamos páginas web (palabras que empiezan por "http." seguidas de cualquier cosa que no sea un espacio)    
+    nuevo_texto <- str_replace_all(nuevo_texto,"http\\S*", "")
+  #Eliminamos los arroba 
+    nuevo_texto <- str_replace_all (nuevo_texto, "@\\S*", "")
+  # Eliminamos los números
+    nuevo_texto <- str_replace_all(nuevo_texto,"[[:digit:]]", " ")
+  # Eliminamos los signos de puntuación
+    nuevo_texto <- str_replace_all(nuevo_texto,"[[:punct:]]", " ")
+  # Eliminamos espacios en blanco múltiples
+    nuevo_texto <- str_replace_all(nuevo_texto,"[\\s]+", " ")
+  # Eliminamos el signo medio - 
+    nuevo_texto <- str_replace_all(nuevo_texto, "[-]", "")
+    return(nuevo_texto)
+}
+
+```
+
+### Limpieza Pfizer.
+
+En primer lugar, nos quedamos con las variables y filas que son de nuestro interes. Para ello utilizamos la función creada anteriormente "Filtrar df".
+
+En segundo lugar, limpiamos la variable texto y ubicación. Para ello utilizaremos la función "limpiar texto"
+
+
+```{r echo=TRUE}
+#Aplicamos la función filtrar_df 
+
+df_pfizer <- filtrar_df(df = df_pfizer)
+
+#Aplicamos la función limpiar_texto, tanto en la variable texto como en la de ubicación.
+
+df_pfizer$text <- limpiar_texto(texto = df_pfizer$text)
+
+df_pfizer$location <- limpiar_texto(texto = df_pfizer$location)
+
+```
+
+### Limpieza SputnikV.
+
+En primer lugar, nos quedamos con las variables y filas que son de nuestro interes. Para ello utilizamos la función creada anteriormente "Filtrar df".
+
+En segundo lugar, limpiamos la variable texto y ubicación. Para ello utilizaremos la función "limpiar texto"
+
+```{r echo=TRUE}
+
+#Aplicamos la función filtrar_df
+
+df_sputnik <- filtrar_df(df = df_sputnik)
+
+df_sputnik$text <- limpiar_texto(texto = df_sputnik$text)
+
+df_sputnik$location <- limpiar_texto(texto = df_sputnik$location)
+
+```
+
+Creamos cuatro df: 1. con retweets, para cada vacuna. 2. sin retweets,  para cada vacuna. Y luego los guardamos como csv.
+
+### Pfizer
+
+```{r}
+#Creamos y guardamos un df sin los rt, para ello filtramos por retweet = falso.
+
+df_pfizer_noRT <- df_pfizer %>%
+  filter(is_retweet == FALSE) 
+
+#Guardamos el df
+
+write.csv2(df_pfizer_noRT, "df_pfizer_noRT_final.csv", row.names = FALSE)
+
+#Guardamos un df con rt, como nuestro df original, "df_pfizer", ya tiene los rt, lo unico que hacemos es guardarlo en csv con otro nombre "df_pfizer_RT_final"
+
+write.csv2(df_pfizer, "df_pfizer_RT_final.csv", row.names = FALSE)
+```
+
+### SputnikV
+
+```{r}
+
+#Creamos y guardamos un df sin los rt, para ello filtramos por retweet = falso.
+
+df_sputnik_noRT <- df_sputnik %>%
+  filter(is_retweet == FALSE) 
+
+#Guardamos el df
+
+write.csv2(df_sputnik_noRT, "df_sputnik_noRT_final.csv", row.names = FALSE)
+
+#Guardamos un df con rt, como nuestro df original, "df_sputnik", ya tiene los rt, lo unico que hacemos es guardarlo en csv con otro nombre "df_sputnik_RT_final"
+
+write.csv2(df_sputnik, "df_sputnik_RT_final.csv", row.names = FALSE)
+```
+
+
