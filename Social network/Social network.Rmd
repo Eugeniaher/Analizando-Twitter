@@ -1,0 +1,448 @@
+---
+title: "Social_network"
+author: "Fernando Zaffaroni + Ornella Giansetto + Walter Baez + Eugenia Hernandez + Santiago Caviglia"
+date: "01/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+#Cargamos las librerias
+
+library(tidyverse)
+library(data.table)
+library(igraph)
+library(ggplot2)
+library(gtable)
+library(plotly)
+library(threejs)
+library(visNetwork)
+library(htmlwidgets)
+library(ggraph)
+
+```
+
+### Usuarios conectados entre sí. 
+
+Vamos a realizar un gráfico que muestre cómo estan conectados los usuarios de twitter entre sí. Por un lado, entre aquellos que mencionan la vacuna SputnikV y por el otro, los que mencionan la vacuna Pzifer. 
+
+
+```{r include=FALSE}
+#Cargamos el data set de la vacuna Sputnik, incluye tweets y retweets
+
+options(scipen = 99)
+
+df_sputnik <- read.csv2("../Data/df_sputnik_RT_final.csv")
+
+df_sputnik <- df_sputnik %>%
+  filter(location %like% "argentina")
+
+#Cargamos el data set de la vacuna Sputnik, incluye tweets y retweets
+
+df_pfizer <- read.csv2("../Data/df_pfizer_RT_final.csv")
+
+df_pfizer <- df_pfizer %>%
+  filter(location %like% "argentina")
+
+```
+
+### SPUTNIKV
+
+Se arma la tabla de nodos (variables, limpieza de duplicados, eleccion de columnas)
+
+```{r}
+
+nodos_sp <- gather(data = df_sputnik, key = "tipo", value = "identificacion", c(1,18)) 
+
+which.duplicates<-rownames(nodos_sp[duplicated(nodos_sp$identificacion),])
+nodos_sp <- nodos_sp[-c(as.integer(which.duplicates)),]
+
+nodos_sp <- nodos_sp %>% select(identificacion, screen_name, is_retweet, favorite_count, retweet_count, verified)  %>% 
+  rename( name = screen_name)
+```
+
+Tabla de links, muestra relaciones entre los usuarios
+
+```{r}
+
+links_sp <- df_sputnik %>% group_by(user_id, retweet_user_id) %>% summarise (cantidad = n()) %>%
+  rename(from = user_id,
+         to = retweet_user_id,
+         friendship = cantidad)
+```
+
+Ploteamos la red, le damos color
+
+```{r}
+g_sputnik <- graph_from_data_frame(links_sp, directed=TRUE, vertices=nodos_sp)
+
+class(g_sputnik) 
+
+V(g_sputnik)$color <- ifelse(V(g_sputnik)$is_retweet == "FALSE","#73a0a9","#8c5f56")
+
+#l <- layout.fruchterman.reingold(g_sputnik, grid = c("nogrid"))
+
+plot(g_sputnik, 
+     vertex.label = NA, 
+     vertex.color= V(g_sputnik)$color,
+     vertex.label.cex = 1.3,
+     vertex.label.dist= 0.9,
+     main="Sputnik", 
+     edge.arrow.size = 0.2,
+     edge.arrow.width = 0.2,
+     edge.width = 0.5,
+     edge.curved = 0.5
+ #    layout = l
+    )
+
+```
+
+Veamos datos de la red
+
+```{r}
+#Tamaño de la red
+
+gsize(g_sputnik)
+
+#Ver si es directo o no
+
+is.directed(g_sputnik)
+
+#Veamos cuales son los usuarios que están más lejos 
+
+farthest_vertices(g_sputnik) 
+
+#Diametro de la red
+
+diameter(g_sputnik)
+
+#Cual es la distancia promedio 
+
+mean_distance(g_sputnik)
+
+#Out degree
+
+g_sputnik.outd <- degree(g_sputnik, mode = c("out"))
+
+# Hacemos un summary de out-degree
+table(g_sputnik.outd)
+
+# Hacemos un histograma de out-degree
+hist(g_sputnik.outd, breaks = 30)
+
+```
+
+Calculemos y plotemos segun el grado de entrada
+
+```{r}
+
+#Grado de entrada
+
+g_sputnik_ind <- degree(g_sputnik, mode = c("in"))
+
+#Mostrar los usuarios que tienen un determinado grado:
+
+mylabel_sp <- names(g_sputnik_ind)
+mylabel_sp[which(log(g_sputnik_ind+1) < 7)]<- "" 
+mylabel2_sp <- mylabel_sp
+
+plot(g_sputnik, 
+     vertex.label = mylabel2_sp, 
+     vertex.color= V(g_sputnik)$color,
+     vertex.size = sqrt(g_sputnik_ind)+2,
+     main="Sputnik", 
+     vertex.label.cex = 1.3,
+     vertex.label.dist= 0.9,
+     main="Sputnik", 
+     edge.arrow.size = 0.2,
+     edge.arrow.width = 0.2,
+     edge.width = 0.5,
+     edge.curved = 0.5
+   #  layout = l
+    )
+
+```
+
+Veamos cual es el nodo con mas y menos influencia dentro de la red.
+
+```{r}
+#Estima que tan importante, central o influencial es un nodo 
+
+g_sputnik_ec <- eigen_centrality(g_sputnik)
+
+which.max(g_sputnik_ec$vector)
+
+which.min(g_sputnik_ec$vector)
+
+plot(g_sputnik, 
+     vertex.color= V(g_sputnik)$color,
+     vertex.size = 25*(g_sputnik_ec$vector),
+     main="Sputnik", 
+     vertex.label.cex = 1.3,
+     vertex.label.dist= 0.9,
+     main="Sputnik", 
+     edge.arrow.size = 0.2,
+     edge.arrow.width = 0.2,
+     edge.width = 0.5,
+     edge.curved = 0.5
+    # layout = l
+    )
+
+```
+
+### Comunidades- SputnikV
+
+Hacemos un grafico
+
+```{r}
+
+sp <- walktrap.community(g_sputnik)
+
+# Determinamos el tamaño de cada comunidad
+sizes(sp)
+
+# Determinamos qué usuarios pertenecen a qué comunidad:
+users_sp <- membership(sp)
+
+#Asignamos colores en base a esa comunidad:
+new.color<-data.frame(t(col2rgb(sp$membership)/254))
+new.color<-rgb(new.color, alpha=.6)
+
+#ploteamos
+plot(sp, g_sputnik, vertex.label = NA,  vertex.size=log(g_sputnik_ind+1), vertex.color=new.color, edge.size = 0.5, 
+     edge.color = "grey")
+
+#Otro tipo de gráfico: 
+plot(g_sputnik, vertex.label=mylabel2_sp, vertex.size=log(g_sputnik_ind+1), vertex.label.color="Black",
+     vertex.color=new.color, vertex.frame.color=new.color, edge.width= .01, edge.arrow.size=.2, 
+     vertex.label.cex=.2,  
+     edge.curved=TRUE, vertex.label.dist=rnorm(length(g_sputnik_ind),.9,.03))
+
+#Grafico Plotly
+
+L <- layout_nicely(g_sputnik)
+vs <- V(g_sputnik)
+es <- as.data.frame(get.edgelist(g_sputnik))
+Ne <- length(es[1]$V1)
+Xn <- L[,1]
+Yn <- L[,2]
+
+network <- plot_ly(type = "scatter", 
+                   x = Xn, 
+                   y = Yn, 
+                   mode = "markers+text", 
+                   text = names(vs), 
+                  )
+
+#Visnetwork,grafico interactivo:
+
+nodes_sp <- nodos_sp %>% rename(id = identificacion, label = name)
+
+visNetwork(nodes_sp, links_sp) %>% 
+  visIgraphLayout() %>%
+  visNodes(
+    shape = "dot",
+    color = list(
+      background = "#0085AF",
+      border = "#013848",
+      highlight = "#FF8000"
+    ),
+    shadow = list(enabled = TRUE, size = 10)
+  ) %>%
+  visEdges(
+    shadow = FALSE,
+    color = list(color = "#0085AF", highlight = "#C62F4B")
+  ) %>%
+  visOptions(highlightNearest = list(enabled = T, degree = 1, hover = T),
+             selectedBy = "group") %>% 
+  visLayout(randomSeed = 11)
+
+```
+
+### PFIZER
+
+Ahora veamos el analisis de PFIZER. Para ello, utilizaremos el DF que incluye los RT. Nos quedaremos solo con los tw con ubicacion en Argentina. 
+
+Armamos la tabla de nodos para que sea un listado unico de los usuarios.
+
+```{r}
+#Genero una variable "identificacion" donde va a aparecer el user id y otra variable "tipo" donde nos va a aparecer si es user_id o retweet_user_id.
+
+nodos_pf <- gather(data = df_pfizer, key = "tipo", value = "identificacion", c(1,18)) #pisamos las columnas y las sustituimos por las nuevas variables
+
+#Elimino los id duplicados 
+
+which.duplicates<-rownames(nodos_pf[duplicated(nodos_pf$identificacion),])
+nodos_pf <- nodos_pf[-c(as.integer(which.duplicates)),]
+
+#Selecciono las columnas que son de mi interes
+
+nodos_pf <- nodos_pf %>% select(identificacion, screen_name, is_retweet, favorite_count, retweet_count, verified)  %>% 
+  rename( name = screen_name)
+```
+
+Armamos la tabla de Links para ver las relaciones entre los usuarios. 
+
+```{r}
+
+links_pf <- df_pfizer %>% group_by(user_id, retweet_user_id) %>% summarise(cantidad = n()) %>%
+  rename(from = user_id,
+         to = retweet_user_id,
+         friendship = cantidad)
+```
+
+Ploteamos nuestra red
+
+```{r}
+g_pfizer <- graph_from_data_frame(links_pf, directed=TRUE, vertices=nodos_pf)
+
+class(g_pfizer) 
+
+#Cambiamos el color de los nodos segun si son retweets o no: No RT = "#73a0a9" (azulcito) 
+
+V(g_pfizer)$color <- ifelse(V(g_pfizer)$is_retweet == "FALSE","#73a0a9","#8c5f56")
+
+plot(g_pfizer)
+
+#Información sobre los nodos
+
+V(g_pfizer)
+
+#Información sobre los edges
+
+E(g_pfizer)
+
+#Tamaño de la red
+
+gsize(g_pfizer)
+
+#Ver si es directo o no
+
+is.directed(g_pfizer)
+```
+
+Información:
+
+```{r}
+#Veamos cuales son los usuarios que están más lejos 
+
+farthest_vertices(g_pfizer) 
+
+#Diametro de la red
+
+diameter(g_pfizer)
+
+#Cual es la distancia promedio 
+
+mean_distance(g_pfizer)
+
+#Out degree
+
+g_pfizer_outd <- degree(g_pfizer, mode = c("out"))
+
+```
+
+Calculemos el grado de entrada para plotear según este.
+
+```{r}
+#Grado de entrada
+
+g_pfizer_ind <- degree(g_pfizer, mode = c("in"))
+
+view(g_pfizer_ind)
+
+my_label_pf <- names(g_pfizer_ind)
+my_label_pf[which(log(g_pfizer_ind + 1) < 3)] <- "" 
+my_label2_pf <- my_label_pf 
+
+view(my_label2_pf)
+
+#Mostrar los usuarios que tienen un determinado grado:
+
+plot(g_pfizer, 
+     vertex.label = NA, 
+     vertex.color= V(g_pfizer)$color,
+     vertex.size = sqrt(g_pfizer_ind)+2,
+     main="Pfizer", 
+     vertex.label.cex = 1.3,
+     vertex.label.dist= 0.9,
+     main="Pfizer", 
+     edge.arrow.size = 0.2,
+     edge.arrow.width = 0.2,
+     edge.width = 0.5,
+     edge.curved = 0.5
+    )
+
+```
+
+Betweenness centrality
+
+```{r}
+#Cual es la ruta mas corta que cada usuario tiene que hacer para llegar a otro usuario
+
+g_b_pf <- betweenness(g_pfizer, directed = TRUE)
+
+view(g_b_pf)
+
+# Generemos un grafico en base a ese puntaje asignado
+
+plot(g_pfizer, 
+     vertex.label = NA,
+     vertex.label.cex=.8,
+     edge.color = 'black',
+     vertex.size = sqrt(g_b_pf)+1,
+     edge.arrow.size = 0.05)
+```
+
+Veamos cual es el nodo con mas y menos influencia dentro de la red y grafiquemoslo según este: eigen_centrality
+
+```{r}
+#Estima que tan importante, central o influencial es un nodo.
+
+g_pfizer_ec <- eigen_centrality(g_pfizer)
+
+which.max(g_pfizer_ec$vector)
+
+plot(g_pfizer, 
+     vertex.label = NA,
+     vertex.color= V(g_pfizer)$color,
+     vertex.size = 25*(g_pfizer_ec$vector),
+     main="Pfizer", 
+     vertex.label.cex = 1.3,
+     vertex.label.dist= 0.9,
+     main="Pfizer", 
+     edge.arrow.size = 0.2,
+     edge.arrow.width = 0.2,
+     edge.width = 0.5,
+     edge.curved = 0.5
+    )
+
+```
+
+### Comunidades
+
+```{r}
+#l_pf <- layout.fruchterman.reingold(g_pfizer, grid = c("nogrid"))
+
+wc_pf <- walktrap.community(g_pfizer)
+
+#Tamaño de la comunidad
+
+sizes(wc_pf)
+
+# Determinamos los usuarios que pertenecen a la comunidad:
+
+users_wc_pf <- membership(wc_pf)
+
+view(users_wc_pf)
+
+# Determinamos que usuario pertenece a qué comunidad
+
+new.color<-data.frame(t(col2rgb(wc_pf$membership)/255)) #vector de colores
+new.color<-rgb(new.color, alpha=.6) #rgb color con intensidad de los tres colores primarios: rojo, verde y azul. Con transparencia alpha. 
+
+plot(wc_pf, g_pfizer, vertex.label = NA, vertex.color = new.color, vertex.size= sqrt(g_pfizer_ind)*2, edge.size = 0.5, edge.color = "grey", edge.arrow.size = 0.2)
+```
