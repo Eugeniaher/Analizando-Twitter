@@ -55,7 +55,7 @@ Se arma la tabla de nodos (variables, limpieza de duplicados, eleccion de column
 
 ```{r}
 
-nodos_sp <- gather(data = df_sputnik, key = "tipo", value = "identificacion", c(1,18)) 
+nodos_sp <- gather(data = df_sputnik, key = "tipo", value = "identificacion", c(1,12)) 
 
 which.duplicates<-rownames(nodos_sp[duplicated(nodos_sp$identificacion),])
 nodos_sp <- nodos_sp[-c(as.integer(which.duplicates)),]
@@ -271,7 +271,7 @@ Armamos la tabla de nodos para que sea un listado unico de los usuarios.
 ```{r}
 #Genero una variable "identificacion" donde va a aparecer el user id y otra variable "tipo" donde nos va a aparecer si es user_id o retweet_user_id.
 
-nodos_pf <- gather(data = df_pfizer, key = "tipo", value = "identificacion", c(1,18)) #pisamos las columnas y las sustituimos por las nuevas variables
+nodos_pf <- gather(data = df_pfizer, key = "tipo", value = "identificacion", c(1,12)) #pisamos las columnas y las sustituimos por las nuevas variables
 
 #Elimino los id duplicados 
 
