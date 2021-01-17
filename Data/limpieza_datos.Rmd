@@ -25,7 +25,7 @@ Para tener dos csv de cada vacuna lo que hicimos fue descargar los tweets y junt
 
 El proceso fue el siguiente (duplicado para ambas vacunas)
 
-Aclaración: no pasamos el rmd ya que ocupa mucho lugar y github se nos rompe.
+Aclaración: no pasamos el rmd ya que ocupa mucho lugar y github no nos lo permitió.
 
 ```{r}
 #Unimos los datasets en un uno nuevo (df_sputnik_union)
@@ -38,6 +38,8 @@ Aclaración: no pasamos el rmd ya que ocupa mucho lugar y github se nos rompe.
 
 #write.csv2(df_sputnik_union, "../Data/df_sputnik.csv", row.names = FALSE)
 
+#df_sputnik_union <- df_sputnik_union %>% filter(location %like% "Argentina" | location %like% "Bolivia" |location %like% "Chile" | location %like% "Paraguay" |  location %like% "Uruguay") #Filtramos por los países limitrofes a Argentina
+
 #Unimos los datasets en uno solo (df_pfizer_union)
 
 # df_pfizer_union <- rbind(pfizer_RT, pfizer_RT2, pfizer_RT3, pfizer_RT4, pfizer_RT5, pfizer_RT6, pfizer_RT7, pfizer_RT8, pfizer_RT9, pfizer_RT10, pfizer_RT11, pfizer_RT12, pfizer_RT13)
@@ -45,6 +47,8 @@ Aclaración: no pasamos el rmd ya que ocupa mucho lugar y github se nos rompe.
 #Eliminamos los duplicados segun el status id
 
 # df_pfizer_union <- df_pfizer_union[!duplicated(df_pfizer_union$status_id),]
+
+#df_pfizer_union <- df_pfizer_union %>% filter(location %like% "Argentina" | location %like% "Bolivia" |location %like% "Chile" | location %like% "Paraguay" |  location %like% "Uruguay") #Filtramos por los países limitrofes a Argentina
 
 ```
 
@@ -65,7 +69,7 @@ Creamos las funciones que usaremos para la limpieza de los datos
 
 ```{r echo=TRUE}
 
-#Creemos una función que nos permita seleccionar las columnas que son de nuestro interes, y a su vez, filtrar por la variable ubicación. Además, cambiamos el formato de la variable fecha y la ordenamos de manera ascedente.
+#Creemos una función que nos permita seleccionar las columnas que son de nuestro interes. Además, cambiamos el formato de la variable fecha y la ordenamos de manera ascedente.
 
 filtrar_df <- function(df) {
   #Nos quedamos con las columnas que son de nuestro interes
