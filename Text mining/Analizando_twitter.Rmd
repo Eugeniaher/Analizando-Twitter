@@ -1,7 +1,7 @@
 ---
 title: "Analizando tweets"
 author: "Eugenia Hernandez + Santiago Caviglia + Fernando Zaffaroni + Ornella Giansetto + Walter Baez"
-date: "7/1/2021"
+date: "1/1/2021"
 output: html_document
 ---
 
@@ -20,6 +20,7 @@ library(gridExtra)
 #install.packages("ggpubr")
 library(ggpubr)
 library(tidytext)
+library(tm)
 library(wordcloud2)
 library(RColorBrewer)
 library(topicmodels)
@@ -286,7 +287,6 @@ p_hitos_arg <- ggplot(contar_arg) +
 
 p_hitos_arg
 
-ggsave("p_hitos_arg.png")
 
 ```
 
@@ -543,6 +543,62 @@ token_sputnik_arg %>%
   filter(n < 6000) %>% #eliminamos la palabra sputnik de la nube
   wordcloud2(size = 1, color = 'random-light', backgroundColor = "black")
 ```
+
+### Calculemos el tf-idf
+
+```{r}
+# Calculemos la cantidad de palabras por vacuna SputnikV
+
+token_sp <- token_sputnik_arg %>%
+  count(vacuna, word, sort = TRUE) %>%
+  filter(n > 50)
+
+#Calculamos la cantidad de palabras por la vacuna Pfizer
+
+token_pf <- token_pfizer_arg %>%
+  count(vacuna, word, sort = TRUE) %>%
+  filter(n > 50)
+
+# Uno los df
+
+token_agrupado <- rbind(token_sp, token_pf)
+
+total_palabras <- token_agrupado %>% 
+  group_by(vacuna) %>% 
+  summarize(total = sum(n))
+
+token_agrupado <- left_join(token_agrupado, total_palabras)
+
+#Ahora calculamos el tf-idf 
+
+token_agrupado <- token_agrupado %>%
+  bind_tf_idf(word, vacuna , n)
+
+#Hagamos el plot
+
+token_agrupado %>%
+  arrange(desc(tf_idf)) %>%
+  mutate(word = factor(word, levels = rev(unique(word)))) %>%
+  group_by(vacuna) %>%
+  top_n(15) %>% 
+  ungroup() %>%
+  ggplot(aes(word, tf_idf, fill = vacuna)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~vacuna, ncol = 2, scales = "free") +
+  coord_flip()
+
+```
+
+### Sentiment Analisys 
+
+Ahora realizemos un sentiment analisys para ver cuál es el sentimiento mayoritario. 
+
+```{r}
+
+
+
+```
+
 
 ###Topic modeling
 
