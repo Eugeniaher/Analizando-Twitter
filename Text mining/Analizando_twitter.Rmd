@@ -267,26 +267,23 @@ Al comparar los gráficos, podemos observar variaciones en la cantidad de mencio
 ```{r}
 #Agregemos fechas importantes al grafico. El 24 de diciembre trajeron las primeras dosis de la sputnikv y el 29 de diciembre comenzaron con la vacunación.
 
-fecha_dosis_sputnik_arg <- ymd("2020-12-24")
-fecha_vacunacion_sputnik_arg <- ymd("2020-12-29")
+fecha_dosis_sputnik <- ymd("2020-12-24")
+fecha_vacunacion_sputnik <- ymd("2020-12-29")
 
 p_hitos_arg <- ggplot(contar_arg) +
   geom_line(aes(x = created_at, y = n, color = vacuna)) +
   geom_text(aes( x=created_at, y=n, label=n), size=3, fontface="italic") +
   scale_x_datetime(date_labels = "%d-%m", date_breaks = "3 day") +
   labs(x = "Fecha", y = "Número de tweets", title = "Cantidad de tweets por día y vacuna - Argentina") +
-  geom_vline(aes(xintercept = as.POSIXct(fecha_dosis_sputnik_arg)),
+  geom_vline(aes(xintercept = as.POSIXct(fecha_dosis_sputnik)),
              color = "orange", alpha = .5)  +
-  annotate("text", x = as.POSIXct(fecha_dosis_sputnik_arg), y = 0,
-           label = "Arribo dosis SpV", size = 3) + 
-  geom_vline(aes(xintercept = as.POSIXct(fecha_vacunacion_sputnik_arg)),
+  geom_vline(aes(xintercept = as.POSIXct(fecha_vacunacion_sputnik)),
              color = "orange", alpha = .5)  +
-  annotate("text", x = as.POSIXct(fecha_vacunacion_sputnik_arg), y = 0,
-           label = "Inicio vacunación SpV", size = 3) +
   theme_minimal() 
 
 p_hitos_arg
 
+ggsave("p_hitos_arg.png")
 
 ```
 
@@ -594,11 +591,60 @@ token_agrupado %>%
 Ahora realizemos un sentiment analisys para ver cuál es el sentimiento mayoritario. 
 
 ```{r}
+sentimientos <- read_tsv("https://raw.githubusercontent.com/7PartidasDigital/AnaText/master/datos/diccionarios/sentimientos_2.txt",col_types = "cccn", locale = default_locale())
 
+sentimientos <- sentimientos %>% rename(word=palabra)
 
+source("https://raw.githubusercontent.com/7PartidasDigital/R-LINHD-18/master/get_sentiments.R")
 
 ```
 
+Cruzo con mi lexicón de sentimientos y empiezo a ver la distribución de sentimientos en los discursos
+
+```{r}
+#Con NRC
+
+token_agrupado %>%
+  right_join(get_sentiments("nrc")) %>%
+  filter(!is.na(sentimiento)) %>%
+  count(sentimiento, sort = TRUE)
+
+# Pruebo con bing para todo el corpus
+token_agrupado %>%
+  right_join(get_sentiments("bing")) %>%
+  filter(!is.na(sentimiento)) %>%
+  count(sentimiento, sort = TRUE)
+
+# Ploteo por NRC 
+
+token_agrupado %>%
+  right_join(get_sentiments("nrc")) %>%
+  na.omit() %>%
+  filter(sentimiento != "negativo" & sentimiento !="positivo" & sentimiento != "disgusto") %>%
+  count(vacuna, sentimiento, sort = TRUE) %>%
+  mutate(sentimiento = reorder(sentimiento, n)) %>% 
+  ggplot(aes(sentimiento, n, fill = sentimiento)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Paired") +
+  theme_minimal() +
+  facet_wrap(~vacuna, ncol = 2, scales = "free_x")+
+  coord_flip()
+
+#Ploteo por bing
+
+token_agrupado %>%
+  right_join(get_sentiments("bing")) %>%
+  na.omit() %>%
+  count(vacuna, sentimiento, sort = TRUE) %>%
+  arrange(vacuna, desc(n), sentimiento) %>% 
+  ggplot(aes(vacuna, n, fill = sentimiento)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Pastel2") +
+  theme_minimal() +
+  facet_wrap(~ vacuna, ncol = 2, scales = "free_x")
+
+
+```                         
 
 ###Topic modeling
 
