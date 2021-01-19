@@ -91,33 +91,53 @@ Para empezar a analizar un poco los tweets, creemos necesario realizar algunos g
 
 Como parte de la limpieza de los tweets descargados, decidimos quedarnos unicamente con aquellos países limitrofes a Argentina, salvo Brasil (porque es de habla portuguesa y le pedimos a la api todos los de hispanoparlantes)  
 
-Ahora bien, creemos  df que correspondan a cada país.
+Ahora bien, creemos los df que correspondan a cada país. Para ello, le agregamos una variable nueva, "Pais", donde incorporamos el nombre del país abreviado (que luego nos va a servir para graficar)
 
 ```{r}
 #Argentina
 
+pais <- sample("ARG", replace = TRUE)
+
 df_argentina_rt <- df_rt %>%
-  filter(location %like% "argentina")
+  filter(location %like% "argentina") 
+  
+df_argentina_rt <- cbind(df_argentina_rt, pais)
 
 #Chile
+
+pais <- sample("CL", replace = TRUE)
 
 df_chile_rt <- df_rt %>%
   filter(location %like% "chile") 
 
+df_chile_rt <- cbind(df_chile_rt, pais)
+
 #Bolivia
+
+pais <- sample("BO", replace = TRUE)
 
 df_bolivia_rt <- df_rt %>%
   filter(location %like% "bolivia")
 
+df_bolivia_rt <- cbind(df_bolivia_rt, pais)
+
 #Paraguay 
+
+pais <- sample("PY", replace = TRUE)
 
 df_paraguay_rt <- df_rt %>%
   filter(location %like% "paraguay") 
 
+df_paraguay_rt <- cbind(df_paraguay_rt, pais)
+
 #Uruguay
+
+pais <- sample("UY", replace = TRUE)
 
 df_uruguay_rt <- df_rt %>%
   filter(location %like% "uruguay")
+
+df_uruguay_rt <- cbind(df_uruguay_rt, pais)
 
 ```
 
@@ -211,53 +231,29 @@ p_diario_py <- ggplot(contar_py) +
 ggplotly(p_diario_py)
 ```
 
-### Unimos los graficos. 
+### Ahora hagamos un gráfico solo donde podemos comparar por país.
 
-Antes de unir, tenemos que simplificar los títulos de los gráficos ya que sino no queda bien esteticamente.  
+Primero unamos los df, donde incluimos una columna de "país"
 
 ```{r}
-#Argentina con titulo simple
 
-p_corto_arg <- ggplot(contar_arg) +
-  geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  labs(x = "fecha", y = "n", title = "ARG") +
-  theme_minimal()
+df_rt <- rbind(df_argentina_rt, df_bolivia_rt, df_chile_rt, df_paraguay_rt, df_uruguay_rt)
 
-#Paraguay con titulo simple
-
-p_corto_py <- ggplot(contar_py) +
-  geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  labs(x = "fecha", y = "n", title = "PY") +
-  theme_minimal()
-
-#Uruguay con título simple
-
-p_corto_uy <- ggplot(contar_uy) +
-  geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  labs(x = "fecha", y = "n", title = "UY") +
-  theme_minimal()
+contar_tot <- df_rt %>% 
+  mutate(created_at = ymd_hms(created_at)) %>%
+  mutate(created_at = floor_date(created_at, unit = "day")) %>%
+  group_by(vacuna, pais) %>%
+  count(created_at) 
   
-#Chile con título simple
-
-p_corto_chl <- ggplot(contar_chl) +
+p_tot <- ggplot(contar_tot) +
   geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  labs(x = "fecha", y = "n", title = "CL") +
+  labs(x = "Fecha", y = "n tweets", title = "Cantidad de tweets por día y vacuna") +
+ #geom_col(show.legend = FALSE) +
+  facet_wrap(~pais, ncol = 2, nrow = 3, scales = "free") +
   theme_minimal()
 
-#Bolivia con título simple
+ggplotly(p_tot)
 
-p_corto_bo <- ggplot(contar_bo) +
-  geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  labs(x = "fecha", y = "n", title = "BO") +
-  theme_minimal()
-
-#Unimos los gráficos con ggarrange
-
-p_union <- ggarrange(p_corto_arg, p_corto_py, p_corto_chl, p_corto_uy, p_corto_bo,
-          common.legend = TRUE,
-          nrow = 3, ncol = 2)
-
-p_union
 ```
 
 Al comparar los gráficos, podemos observar variaciones en la cantidad de menciones de cada vacuna por país. Esto puede estar relacionado a los acuerdos y vacunas que arribaron o arribarán en cada uno. Lo vemos claramente en Argentina, donde la vacuna SputnikV logra mayor importancia al tener más menciones debido a que es la vacuna que recibiremos, a comparación de Chile que tiene mayores menciones de la vacuna Pfizer ya que es con la que están vacunando.
@@ -276,9 +272,9 @@ p_hitos_arg <- ggplot(contar_arg) +
   scale_x_datetime(date_labels = "%d-%m", date_breaks = "3 day") +
   labs(x = "Fecha", y = "Número de tweets", title = "Cantidad de tweets por día y vacuna - Argentina") +
   geom_vline(aes(xintercept = as.POSIXct(fecha_dosis_sputnik)),
-             color = "orange", alpha = .5)  +
+             color = "orange", alpha = .7)  +
   geom_vline(aes(xintercept = as.POSIXct(fecha_vacunacion_sputnik)),
-             color = "orange", alpha = .5)  +
+             color = "orange", alpha = .7)  +
   theme_minimal() 
 
 p_hitos_arg
