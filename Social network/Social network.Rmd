@@ -1,5 +1,5 @@
 ---
-title: "Social network: analizando twitter. Menciones de las vacunas Pfizer y SputnikV"
+title: "Social network: analizando twitter. Menciones de las vacunas Pfizer y SputnikV."
 author: "Fernando Zaffaroni + Ornella Giansetto + Walter Baez + Eugenia Hernandez + Santiago Caviglia"
 date: "01/1/2021"
 output: html_document
