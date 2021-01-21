@@ -21,7 +21,7 @@ library(stringdist)
 library(data.table)
 ```
 
-Para tener dos csv de cada vacuna lo que hicimos fue descargar los tweets y juntarlos todos en dos df: 1. con retweets 2. sin retweets.
+Para tener dos csv de cada vacuna lo que hicimos fue descargar los tweets y juntarlos en dos df: 1. con retweets 2. sin retweets.
 
 El proceso fue el siguiente (duplicado para ambas vacunas)
 
@@ -69,7 +69,7 @@ Creamos las funciones que usaremos para la limpieza de los datos
 
 ```{r echo=TRUE}
 
-#Creemos una función que nos permita seleccionar las columnas que son de nuestro interes. Además, cambiamos el formato de la variable fecha y la ordenamos de manera ascedente.
+#Creamos una función que nos permite seleccionar las columnas que son de nuestro interes. Además, cambiamos el formato de la variable fecha y la ordenamos de manera ascedente.
 
 filtrar_df <- function(df) {
   #Nos quedamos con las columnas que son de nuestro interes
@@ -80,6 +80,8 @@ filtrar_df <- function(df) {
   df <- df %>% arrange (created_at) 
       return(df)
 }
+
+#Creamos una función que nos limpie el texto para realizar text mining
 
 limpiar_texto <- function(texto){
   #Se convierte todo el texto a minúsculas
