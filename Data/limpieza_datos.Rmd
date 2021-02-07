@@ -143,7 +143,7 @@ df_sputnik$location <- limpiar_texto(texto = df_sputnik$location)
 
 ```
 
-Creamos cuatro df: 1. con retweets, para cada vacuna. 2. sin retweets,  para cada vacuna. Y luego los guardamos como csv.
+Creamos dos df: 1. Pfizer 2. SputnikV
 
 ### Pfizer
 

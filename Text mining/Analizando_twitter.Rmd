@@ -27,7 +27,7 @@ library(topicmodels)
 library(knitr)
 ```
 
-En el siguiente trabajo analizaremos las menciones que reciben las vacunas SputnikV y Pfizer en twitter. Para ello, descargamos cada dos días 18.000 mil tweets, por vacuna. Luego filtramos por los países que son de nuestro interes para analizar los países limítrofes a Argentina, dejando de lado a Brasil ya que su idioma es el portugues.
+En el siguiente trabajo analizaremos las menciones que reciben las vacunas SputnikV y Pfizer en twitter. Para ello, descargamos cada dos días 18.000 mil tweets, por vacuna. Luego filtramos por los países que son de nuestro interes:  los países limítrofes a Argentina, dejando de lado a Brasil ya que su idioma es el portugues.
 
 A través de dichos tweets buscabamos analizar varias cosas: 
 
@@ -52,6 +52,13 @@ df_sputnik_RT <- read.csv2("../Data/df_sputnik_RT_final.csv")
 
 ```
 
+En primer lugar, creamos las funciones que son necesarias para realizar el analisis.
+
+1. Función para agrupar los df por tipo de vacuna 
+
+2. Función para tokenizar los df
+
+3. Función para contar la frecuencia de las palabras
 
 ```{r include=FALSE}
 #Creamos nuestras funciones 
@@ -84,9 +91,9 @@ fn_frecuencia <- function(frec) {
 
 ```
 
+Antes de comenzar con el analisis, preparemos nuestro dataset. Para ello vamos a utilizar los df CON Retweet. A cada df le creamos una columna con el nombre "tipo" donde le diremos si es sputnikV o pfizer. Luego, unimos ambos df en uno solo final.
 
 ```{r include=FALSE}
-#Preparamos el dataset para hacer comparaciones entre cantidad de menciones por vacuna. Para ello vamos a utilizar los df CON Retweet.
 
 #Creo una columna nueva llamada "tipo" en los df con RT donde se va a aclarar si habla sobre la vacuna sputnikv o pfizer. 
 
@@ -105,11 +112,13 @@ df_rt <- rbind(df_pfizer_RT, df_sputnik_RT)
 
 ### Cuantificando tweets por día y vacuna.
 
-Para empezar a analizar un poco los tweets, creemos necesario realizar algunos graficos comparativos que nos permitan sacar conclusiones. En este caso, vamos a enfocarnos en cuantificar la cantidad de tweets que mencionan por un lado a la vacuna Pfizer y por el otro a SputnikV, por día y país. 
+Para empezar a analizar un poco los tweets, creemos necesario realizar algunos gráficos comparativos que nos permitan sacar conclusiones. En este caso, vamos a enfocarnos en cuantificar la cantidad de tweets que mencionan por un lado a la vacuna Pfizer y por el otro a SputnikV, por día y país. 
 
-Como parte de la limpieza de los tweets descargados, decidimos quedarnos unicamente con aquellos países limitrofes a Argentina, salvo Brasil (porque es de habla portuguesa y le pedimos a la api todos los de hispanoparlantes)  
+Como parte de la limpieza de los tweets descargados, decidimos quedarnos unicamente con aquellos países limitrofes a Argentina, salvo Brasil (porque hablan portugues y le pedimos a la api todos los de hispanoparlantes)  
 
-Ahora bien, creemos los df que corresponden a cada país. Para ello, le agregamos una variable nueva, "Pais", donde incorporamos el nombre del país abreviado (que luego nos va a servir para graficar)
+Ahora bien, creemos los df que corresponden a cada país. Para ello, le agregamos una variable nueva, "Pais", donde incorporamos el nombre del país abreviado (que luego nos va a servir para graficar) 
+
+Luego utilizamos la función agrupar para agrupar nuestros df según tipo de vacuna y fecha. 
 
 ```{r include=FALSE}
 #Argentina
@@ -159,7 +168,6 @@ df_uruguay_rt <- cbind(df_uruguay_rt, pais)
 
 ```
 
-
 ```{r include=FALSE}
 #Utilicemos la función fn_agrupar para agrupar nuestros df según tipo de vacuna y fecha.
 
@@ -186,6 +194,8 @@ contar_bo <- fn_agrupar(df = df_bolivia_rt)
 
 #### Realicemos graficos para cada país para comparar entre las dos vacunas, la cantidad de menciones por día.
 
+Bien, aqui realizaremos los gráficos de línea correspondientes a cada país según la cantidad de menciones por día por vacuna. 
+
 ##### Argentina
 
 ```{r echo=FALSE}
@@ -198,10 +208,11 @@ ggplotly(p_diario_arg)
 
 ```
 
+En el gráfico podemos observar picos de menciones de la vacuna SputnikV los días 24 y 29 de Diciembre, y 3, 5 y 12 de enero. 
 
-```{r echo=FALSE}
 ##### Chile
 
+```{r echo=FALSE}
 p_diario_ch <- ggplot(contar_chl) +
   geom_line(aes(x = created_at, y = n, color = vacuna)) +
   labs(x = "Fecha", 
@@ -213,6 +224,8 @@ ggplotly(p_diario_ch)
 
 ```
 
+En el caso de Chile, los picos de menciones corresponden a la vacuna Pfizer, por el contrario de Argentina.
+
 ##### Bolivia
 
 ```{r echo=FALSE}
@@ -223,6 +236,8 @@ p_diario_bo <- ggplot(contar_bo) +
 
 ggplotly(p_diario_bo)
 ```
+
+Si observamos el gráfico de Bolivia, vemos que la cantidad de tweets con ubicación "Bolivia" es mucho menor a otros países limítrofes, sin embargo, igualmente se puede observar qué vacuna recibe más menciones. En este caso vemos que los picos de menciones corresponden a la vacuna SputnikV.
 
 ##### Uruguay
 
@@ -236,6 +251,7 @@ p_diario_uy <- ggplot(contar_uy) +
 ggplotly(p_diario_uy)
 
 ```
+Uruguay, a diferencia de los demás países, tiene fluctuaciones de menciones de ambas vacunas. No hay ninguna vacuna que prevalece sobre la otra, sino que dependiendo de la fecha son los picos de las menciones de ambas vacunas.
 
 ##### Paraguay
 
@@ -248,9 +264,13 @@ p_diario_py <- ggplot(contar_py) +
 ggplotly(p_diario_py)
 ```
 
+En el caso de Paraguay, observamos que en diciembre hay más menciones de la vacuna Pfizer, pero en enero las menciones de SputnikV llegan a un pico muy alto, probablemente por algún anuncio que haya realizado el presidente con respecto a esa vacuna.
+
 ### Comparemos algunos datos: 
 
-#### Ahora hagamos un gráfico solo donde podemos comparar por país.
+#### Ahora hagamos un gráfico solo donde podemos comparar entre país.
+
+Para poder comparar entre países creemos necesario realizar un gráfico solo que una a todos.
 
 ```{r echo=FALSE}
 #Primero unamos los df:
@@ -275,7 +295,9 @@ ggplotly(p_tot)
 
 Al comparar los gráficos, podemos observar variaciones en la cantidad de menciones de cada vacuna por país. Esto puede estar relacionado a los acuerdos y vacunas que arribaron o arribarán a cada uno. Lo vemos claramente en Argentina, donde la vacuna SputnikV logra mayor importancia al tener más menciones debido a que es la vacuna que recibimos, a comparación de Chile que tiene mayores menciones de la vacuna Pfizer ya que es con la que están vacunando.
 
-#### Ahora bien, agreguemos fechas importantes que nos permitan analizar los picos de menciones de la vacuna SputnikV en Argentina: 24 y 29 de diciembre. 
+#### Fechas importantes
+
+Ahora bien, agreguemos fechas importantes que nos permitan analizar los picos de menciones de la vacuna SputnikV en Argentina: 24 y 29 de diciembre. 
 
 ```{r echo=FALSE}
 #Agregemos fechas importantes al grafico. El 24 de diciembre trajeron las primeras dosis de la sputnikv y el 29 de diciembre comenzaron con la vacunación.
@@ -285,7 +307,7 @@ fecha_vacunacion_sputnik <- ymd("2020-12-29")
 
 p_hitos_arg <- ggplot(contar_arg) +
   geom_line(aes(x = created_at, y = n, color = vacuna)) +
-  geom_text(aes( x=created_at, y=n, label=n), size=3, fontface="italic") +
+  geom_text(aes( x = created_at, y=n, label=n), size=3, fontface="italic") +
   scale_x_datetime(date_labels = "%d-%m", date_breaks = "3 day") +
   labs(x = "Fecha", y = "Número de tweets", title = "Cantidad de tweets por día y vacuna - Argentina") +
   geom_vline(aes(xintercept = as.POSIXct(fecha_dosis_sputnik)),
@@ -303,7 +325,9 @@ Antes de seguir, analicemos un poco lo que vimos recien: de la visualización ge
 
 Por otro lado, también se observa que si bien la vacuna Pfizer no pudo ser traída a Argentina ni mucho menos empezar un esquema de vacunación para la población, los tweets que la mencionan coinciden con la fecha relevante para la vacuna sputnikV (29/12/20). De esta forma, se podría pensar que hay una relación simétrica entre las menciones de la vacuna sputnik y la vacuna de Pfizer. Esta cuestión, podría deberse al alto grado de polarización y politización mediática que existe entre la eficacia y utilización de ambas vacunas. 
 
-Ahora bien, indaguemos un poco la dinamica de twitter en relación a nuestro dataset Argentino. En este paso vamos a usar el df que une los tweets de pfizer y sputnik - DF ARGENTINA, que incluye los RT.
+### Dinámica 
+
+Ahora bien, indaguemos un poco la dinámica de twitter en relación a nuestro dataset Argentino. En este paso vamos a usar el df que une los tweets de pfizer y sputnik - DF ARGENTINA, que incluye los RT.
 
 ```{r echo=FALSE}
 #Eliminar rt y respuestas. 
@@ -344,13 +368,15 @@ ggplot(categorias_arg) +
   geom_text(aes(x=category, y=percentage, label=percentage), size=3)
 ```
 
-Cuando se analiza a los tweets por categoría, dividiendolos en tres categorías, condiseramos a: orgánicos como los tweets “originales”, “respuestas” a las respuestas de los tweets que mencionan a las vacunas y “retweets” (valga la redundancia) a los retweets.
+Cuando se analiza a los tweets por categoría, dividiendolos en tres, condiseramos a: orgánicos como los tweets “originales”, “respuestas” a las respuestas de los tweets que mencionan a las vacunas y “retweets” (valga la redundancia) a los retweets.
 
-Aqui se observa que la mayor cantidad de tweets, son retweets (79%). Esta cuestión nos muestra que el efecto cascada realizado por líderes de opinión (calvo, 2015) es muy fuerte, ya que los tweets originales solo corresponden al 15 %.
+Aqui podemos ver claramente que la dinámica de twitter no es publicar tweets nuevos, sino retwittear aquellos que se volvieron virales. En este sentido, se observa que la mayor cantidad de tweets, son retweets (79%). Esta cuestión nos muestra que el efecto cascada realizado por líderes de opinión (calvo, 2015) es muy fuerte, ya que los tweets originales solo corresponden al 15 %.
 
 ## Tweets con más rt y más favs. 
 
-Para realizar este analisis, debemos utilizar df sin RT. Para ello, realizamos el df global, y luego a parte, lo filtramos por los valores que son de nuestro interes.
+Ahora bien, dado que observamos un efecto cascada, nos pareció interesante analizar cuáles son los tweets con más rt y más favoritos. Este análisis lo realizaremos unicamente para aquellos cuya ubicación es Argentina.
+
+Para realizar este análisis, debemos utilizar df sin RT. Para ello, utilizamos el df global ya armado con RT y le borramos todos los rt. Luego lo filtramos por los valores que son de nuestro interes.
 
 ```{r include=FALSE}
 #df base sin rt
@@ -360,7 +386,11 @@ df_nort <- df_rt %>%
 
 ```
 
+Ahora bien, para poder realizar mejor el análisis, vamos a separar nuestro df según la vacuna. 
+
 ### Pfizer
+
+En este caso, nos quedamos con todos los tweets con ubicación en argentina, que mencionan a la vacuna Pfizer y que tengan más de 100 rt ó 300 favs.
 
 ```{r include=FALSE}
 #Creamos un df con datos de argentina que nos sirva para realizar luego el analisis de stop words. Pfizer
@@ -378,22 +408,26 @@ view(count_arg_pfizer)
 
 El tweet con más rt y más favoritos de nuestro dataset de pfizer es el de Vivaroca2015: 
 
-"el único país con el que pfizer tiene problemas es argentina pero alberto pretende que le creamos que la culpa es del laboratorio en verdad piensa que todos tenemos el mismo nivel intelectual de sus votantes"
+1. "el único país con el que pfizer tiene problemas es argentina pero alberto pretende que le creamos que la culpa es del laboratorio en verdad piensa que todos tenemos el mismo nivel intelectual de sus votantes"
 Si bien no es una cuenta verificada, observamos que tiene 45672 followers, por lo tanto, una gran llegada en la red social.
 
 El tweet que le sigue según favoritos es guarda_la_moto con:
 
-"estamos negociando con pfizer pero ellos tienen algunos problemas logísticos tienen que pedirle permiso al que tiene sombrero de mapache primero"
+2. "estamos negociando con pfizer pero ellos tienen algunos problemas logísticos tienen que pedirle permiso al que tiene sombrero de mapache primero"
 
-Sin embargo, la cantidad de rt no es significante.
+Sin embargo, para el tweet de guarda_la_moto la cantidad de rt no es significante.
 
 El siguiente tweet más rt es el de edufeiok: 
 
-"esta gente es muy delirante se pasan de listos con el relato un médico asesor de axel kicillof dijo que pfizer pidió de garantía glaciares y permisos de pesca para traer su vacuna al país".
+3. "esta gente es muy delirante se pasan de listos con el relato un médico asesor de axel kicillof dijo que pfizer pidió de garantía glaciares y permisos de pesca para traer su vacuna al país".
 
-En este caso, si es una cuenta verificada, con 711125 de followers. 
+En este caso, estamos hablando de cuentas con influencia ya que está verificada, con 711125 de followers. 
 
 ### SputnikV
+
+Ahora sigamos por las menciones a SputnikV. 
+
+En este caso, nos quedamos con todos los tweets con ubicación en argentina, que mencionan a la vacuna sputnikV y que tengan más de 100 rt ó 300 favs.
 
 ```{r include=FALSE}
 #Creamos un df con datos de argentina que nos sirva para realizar luego el analisis de stop words. SputnikV
@@ -412,22 +446,34 @@ view(count_arg_sputnik)
 
 En el caso de sputnik, el tweet con más rt y favoritos es de carlavizzotti:
 
-"el gobierno argentino adquirió al fondo de inversión directa de rusia millones de esquemas de vacuna sputnik v millones de dosis que llegarán en función del contrato firmado entre los meses de diciembre y marzo" 
+1. "el gobierno argentino adquirió al fondo de inversión directa de rusia millones de esquemas de vacuna sputnik v millones de dosis que llegarán en función del contrato firmado entre los meses de diciembre y marzo" 
 
-Su cuenta es verificada y tiene 42121 seguidores.
+Su cuenta es verificada y tiene 42121 seguidores por lo que claramente tiene una gran llegada a la comunidad.
 
 El segundo tweet con más favoritos, pero pocos rt, es gonchobanzas, con 329374 seguidores.
 
-"me vacuné con la sputnik y esta todo bien adjunto selfie" 
+2. "me vacuné con la sputnik y esta todo bien adjunto selfie" 
 
 ## Analisis de las palabras más mencionadas en los tweets.
 
-Vamos a realizar un analisis de las palabras más mencionadas, tanto para los tweets que mencionan a pfizer como para los que mencionan a sputnikV. Para eso utilizaremos el df sin rt de argentina.
+Ahora bien, vamos a realizar un análisis de las palábras más mencionadas, tanto para los tweets que mencionan a pfizer como para los que mencionan a sputnikV. Para eso utilizaremos el df sin rt de Argentina.
+
+Los pasos a seguir son los siguientes:
+
+1. Genero un corpus con todas las palábras, para cada país. Para ello utilizo la función tokenizar.
+
+2. Creamos un df con los stops words en español.
+
+3. Realizamos un listado de stop words que no aportan a nuestro analisis y no fueron incluidas en el paso anterior.
+
+4. Sacamos las stop words que no ayudan al análisis.
+
+5. Vemos la frecuencia de las palabras en el corpus a traves de la función fn_frecuencia
+
+6. Ploteamos.
 
 ```{r include=FALSE}
-#Bien, ahora genero un corpus con todas las palabras, para cada país. Utilizo la función fn_tokenizar
-
-#genero un dataset que tenga todas las palabras de los tweets, 1 por fila, utilizando la función creada anteriormente "fn_tokenizar"
+#Genero un dataset que tenga todas las palabras de los tweets, 1 por fila, utilizando la función creada anteriormente "fn_tokenizar"
 
 #Pfizer
 
@@ -439,11 +485,8 @@ token_sputnik_arg <- fn_tokenizar(tk = df_arg_noRT_sputnik)
 
 ```
 
-
 ```{r include=FALSE}
-#Primero creamos un df con los stops words
-
-# Genero dataframe especial con stop words en español, de la librería tm
+#Genero dataframe especial con stop words en español, de la librería tm
 
 custom_stop_words <- bind_rows(stop_words,
                                data_frame(word = tm::stopwords("spanish"), lexicon = "custom"))
@@ -457,7 +500,6 @@ custom_stop_words <- bind_rows(stop_words,
 palabras_sinaporte <- tibble(word = c("vacunas", "si", "informa", "a", "aa", "acá"))
 
 ```
-
 
 ```{r include=FALSE}
 
@@ -474,10 +516,9 @@ token_pfizer_arg <- token_pfizer_arg %>%
   anti_join(palabras_sinaporte)
 ```
 
-
-Ahora veamos la frecuencia de palabras en el corpus a traves de la función fn_frecuencia
-
 ```{r include=FALSE}
+#Frecuencia de palabras
+
 #Pfizer
 
 fn_frecuencia(frec = token_pfizer_arg)
@@ -487,9 +528,11 @@ fn_frecuencia(frec = token_pfizer_arg)
 fn_frecuencia(frec = token_sputnik_arg)
 ```
 
-Ploteamos las palabras más frecuentes
+### Ploteamos las palabras más frecuentes
 
-### Pfizer
+#### Pfizer
+
+Ploteamos las palabras más frecuentes entre los tweets que mencionan a Pfizer y tienen ubicación en Argentina.
 
 ```{r echo=FALSE}
 # Ploteamos las palabras más frecuentes
@@ -509,8 +552,9 @@ token_pfizer_arg %>%
 
 En cuanto al análisis de las palabras que se utilizan más frecuentemente, se observa, descartando la primera plabra más utilizada, “Pfizer” con 2799 observaciones, le sigue “vacuna” con 1274 observaciones. La tercer palabra más utilizada es “sputnik” con 309 observaciones. Esta situación, sugiere que cuando se refieren a Pfizer se la contrapone frente a otra. Esta última consideración podría reafirmar la conjetura sobre la polarización y politización existente entre el uso o no de una o otra vacuna. 
 
+Ahora graficamos las palabras utilizadas pero a traves de una nube de palabras.
 
-### Wordcloud
+#### Wordcloud
 
 ```{r echo=FALSE}
 # Word cloud
@@ -524,7 +568,11 @@ wordcloud_pf
 
 ```
 
-### SputnikV
+La nube de palabras nos muestra, al igual que el gráfico anterior, que la palabra más mencionada es "Vacuna".
+
+#### SputnikV
+
+Ploteamos las palabras más frecuentes entre los tweets que mencionan a SputnikV  y tienen ubicación en Argentina.
 
 ```{r echo=FALSE}
 # Ploteamos las palabras más frecuentes
@@ -545,7 +593,9 @@ token_sputnik_arg %>%
 
 Al igual que Pfizer, la primera  palabra más utilizada es el nombre de la vacuna con 6551 observaciones y la palabra “vacuna” con 2882 observaciones. Ahora bien, lo que sí llama la atención, es que a diferencia de la Pfizer, aparecen dos países con una cantidad de menciones alta:  Rusia con 630 y Argentina 602 observaciones. Esta evidencia, muestra que la politización y polarización alrededor de la vacuna Sputnik V ocurre fuertemente.Incluso si uno observa la nube de palabras pugede encontrar que aparecen varios nombres de funcionarios de este país como “ginés”, “kicillof”, “vizzoti”.
 
-### Wordcloud
+Ahora graficamos las palabras utilizadas pero a traves de una nube de palabras.
+
+#### Wordcloud
 
 ```{r echo=FALSE, message=FALSE, include=F}
 # Word cloud
@@ -559,57 +609,28 @@ wordcloud_sp
 
 ```
 
-### Calculemos el tf-idf
+La nube de palabras nos muestra, al igual que el gráfico anterior, que la palabra más mencionada es "Vacuna".
 
 ```{r include=FALSE}
 # Calculemos la cantidad de palabras por vacuna SputnikV
-
 token_sp <- token_sputnik_arg %>%
   count(vacuna, word, sort = TRUE) %>%
   filter(n > 50)
-
 #Calculamos la cantidad de palabras por la vacuna Pfizer
-
 token_pf <- token_pfizer_arg %>%
   count(vacuna, word, sort = TRUE) %>%
   filter(n > 50)
-
 # Uno los df
-
 token_agrupado <- rbind(token_sp, token_pf)
-
 total_palabras <- token_agrupado %>% 
   group_by(vacuna) %>% 
   summarize(total = sum(n))
-
 token_agrupado <- left_join(token_agrupado, total_palabras)
-
-#Ahora calculamos el tf-idf 
-
-token_agrupado <- token_agrupado %>%
-  bind_tf_idf(word, vacuna , n)
-```
-
-
-```{r echo=FALSE}
-#Hagamos el plot
-
-token_agrupado %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(word = factor(word, levels = rev(unique(word)))) %>%
-  group_by(vacuna) %>%
-  top_n(15) %>% 
-  ungroup() %>%
-  ggplot(aes(word, tf_idf, fill = vacuna)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~vacuna, ncol = 2, scales = "free") +
-  coord_flip()
-
 ```
 
 ### Sentiment Analisys 
 
-Ahora realizemos un sentiment analisys para ver cuál es el sentimiento mayoritario. 
+Ahora realizemos un sentiment analisys para ver cuál es el sentimiento mayoritario entre las menciones de cada vacuna. 
 
 ```{r include=FALSE}
 sentimientos <- read_tsv("https://raw.githubusercontent.com/7PartidasDigital/AnaText/master/datos/diccionarios/sentimientos_2.txt",col_types = "cccn", locale = default_locale())
@@ -620,7 +641,8 @@ source("https://raw.githubusercontent.com/7PartidasDigital/R-LINHD-18/master/get
 
 ```
 
-Cruzo con mi lexicón de sentimientos y empiezo a ver la distribución de sentimientos en los discursos
+Para ello, cruzo con mi lexicón de sentimientos y empiezo a ver la distribución de sentimientos en los tweets. 
+Probaremos en primer lugar con "NRC" y en segundo con "Bing"
 
 ```{r include=FALSE}
 #Con NRC
@@ -637,6 +659,9 @@ token_agrupado %>%
   count(sentimiento, sort = TRUE)
 ```
 
+Ahora ploteamos.
+
+Primero ploteamos por NRC y luego por BING
 
 ```{r echo=FALSE}
 # Ploteo por NRC 
@@ -652,7 +677,17 @@ token_agrupado %>%
   theme_minimal() +
   facet_wrap(~vacuna, ncol = 2, scales = "free_x")+
   coord_flip()
+```
 
+En cuanto al análisis de sentimiento, partimos de la base que los n de palabras son diferentes para cada vacuna. Si bien no parece correcto hacer comparaciones entre ellas, si podemos hacer un analisis descriptivo de lo que vemos. 
+Cuando se realiza el análisis de manera desagregada, el sentimiento de “confianza” es alto para ambas vacunas. 
+Cabe destacar que para la vacuna Pfizer, los sentimientos más vistos además de la confianza, son miedo y premonición, al igual que la vacuna SputnikV. 
+
+Sin embargo, a pesar de las conclusiones que uno puede sacar, hay que tener en cuenta que la dinamica misma de twitter hace que muchas veces lo que se dice sea en tono irónico. En este sentido, es importante el comentario ya que al propio algoritmo de análisis de sentimiento se le dificulta distinguir la irónia y puede "encasillar" tweets en determinado sentimiento cuando en realidad, si un humano lo lee, puede no lo "encasillaría" ahí.
+
+Ahora ploteo por BING.
+
+```{r echo=FALSE}
 #Ploteo por bing
 
 token_agrupado %>%
@@ -666,19 +701,30 @@ token_agrupado %>%
   theme_minimal() +
   facet_wrap(~vacuna, ncol = 2, scales = "free_x")
 
-
 ```
+
+En cuanto al análisis agregado de los sentimientos, tanto positivos como negativos, vemos sorprendentemente que Pfizer obtiene más sentimientos negativos que positivos, mientras que la vacuna hecha en el país ruso  tiene una mejor relación entre ambos sentimientos, obteniendo un resultado de 50% para cada una. 
+
+Estos últimos datos contrastan con el análisis desagregado de sentimientos. Al parecer, estos resultados seguramente requieren de un mejor procesamiento, ya que es probable que el banco de palabras que se utiliza para el análisis de sentimientos positivos y negativos, no esté del todo pulido y relacionado con el lenguaje que se usa en una plataforma tan informal y masiva como Twitter.
 
 ### Topic modeling
 
-Vamos a realizar un topic modeling para los tweets con ubicación en Argentina.
+Por último, vamos a realizar un topic modeling para los tweets con ubicación en Argentina. La idea es clasificar los tweets en función de su temática. El objetivo es descubrir el tema subyacente, buscar patrones en el contenido de los tweets en base a la frecuencia de las palabras. 
+
+Los pasos que sehguimos son:
+
+1. Genero una matriz término-documento.
+
+2. Aplico el topic modelling y utilizo la función ```LDA()``` (latent dirichlet allocation)
+
+3. Paso el objeto a tidy.
+
+4. Veo y ploteo los términos más frecuentes de mi topic modelling.
 
 ### Pfizer
 
 ```{r include=FALSE}
-#Para realizar topic modeling primero debo generar una matriz término-documento.
-
-#Genero la matriz término documento con la función ```cast_dtm()```
+#Para realizar topic modeling primero debo generar una matriz término-documento, para ello utilizo la función  ```cast_dtm()```
 
 data_conteo_pfizer <- token_pfizer_arg %>% count(status_id, word, sort=TRUE)
 
@@ -721,8 +767,6 @@ terminos_frecuentes_pfizer %>%
 
 ### Sputnik
 
-Genero la matriz término documento 
-
 ```{r include=FALSE}
 data_conteo_sputnik <- token_sputnik_arg %>% count(status_id, word, sort=TRUE)
 
@@ -734,7 +778,6 @@ data_dtm_sputnik $ncol
 
 ```
 
-Ahora aplico mi topic modelling
 
 ```{r echo=FALSE}
 # Con k indico la cantidad de tópicos
@@ -762,3 +805,18 @@ terminos_frecuentes_sputnik %>%
   coord_flip()
 ```
 
+
+### Conclusiones
+
+Con el objetivo de cuantificar y descubrir qué se anda diciendo en twitter sobre las vacunas Pfizer y SputnikV, analizamos un corpus de tweets descargados durante los últimos 10 días de diciembre y los primeros 12 de enero. Luego de realizar una serie de analisis, concluimos que:
+
+1. La cantidad de menciones que recibe cada vacuna por día depende directamente de la coyuntura y contexto del momento. Asi se observa en todos los países limítrofes en general y en Argentina en particular, donde los picos de menciones se corresponden a anuncios importantes del gobierno. 
+
+2. Al analizar la dinámica de twitter observamos que hay grandes formadores de opiniones que a través de sus tweets tienen gran influencia en la comunidad y no son únicamente aquellos con cuenta verificada, sino también usuarios con varios seguidores o incluso usuarios con pocos seguidores pero con tweets que se volvieron virales. A partir de ello quisimos realizar un analisis de redes que nos explique un poco más como se difunden los mensajes y qué comunidades se forman. 
+
+3. Al analizar las palabras más frecuentes en los tweets, observamos en ambos casos que hay una gran politización y polarización del tema. En algunos casos más notada, por ejemplo en las menciones de Pfizer  donde además se menciona en gran medida vacunas desarrolladas por otros laboratorios. Creemos que este hallazgo nos da puntapie para en un futuro analizar la postura partidaría de los mayores formadores de opinión sobre nuestra muestra. 
+
+4. Por último, al analizar los sentimientos que se desprenden de los tweets nos encontramos con varias trabas. Creemos que el análisis de sentimiento no se aplica del todo a la dinámica de twitter (lenguaje que se usa en una plataforma tan informal y masiva como Twitter) o quizás los datos requieran de un mejor procesamiento.
+
+
+Para finalizar, si bien no encontramos hallazgos muy interesantes como nos imaginabamos, si creemos que fué relevante el tema de análisis. En primer lugar, porque sirvió para cuantificar cuánto se habla del tema en una red social como lo es twitter. En segundo, porque es un tema actual y el momento en el que descargamos los tweets coincidió con grandes anuncios tanto en Argentina como en el resto del mundo.
